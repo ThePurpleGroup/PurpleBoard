@@ -21,7 +21,7 @@ public class Conexao {
     public static Connection getConnection(){
         try {
             Class.forName("org.postgresql.Driver");
-            return DriverManager.getConnection("jdbc:postgresql://localhost:5432/datawarehouse", "postgres", "postgres");
+            return DriverManager.getConnection("jdbc:postgresql://localhost:5432/dwh", "postgres", "postgres");
         } catch (SQLException | ClassNotFoundException ex) {
             Logger.getLogger(Conexao.class.getName()).log(Level.SEVERE, null, ex);
             return null;

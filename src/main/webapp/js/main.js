@@ -1210,14 +1210,14 @@
       var myChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ["Sun", "Mon", "Tu", "Wed", "Th", "Fri", "Sat"],
+          labels: ["Norte", "Centro-Oeste", "Nordeste", "Sul", "Sudeste"],
           datasets: [
             {
-              label: "My First dataset",
-              data: [40, 55, 75, 81, 56, 55, 40],
-              borderColor: "rgba(0, 123, 255, 0.9)",
+              label: "Valor Total",
+              data: [303434.36, 19997.5,839643.00 , 112966.00, 624389.00],
+              borderColor: "rgb(97,47,116)",
               borderWidth: "0",
-              backgroundColor: "rgba(0, 123, 255, 0.5)"
+              backgroundColor: "rgba(97,47,116, 0.5)"
             }
           ]
         },

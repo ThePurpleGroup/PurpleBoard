@@ -5,15 +5,23 @@
  */
 package controlizinho;
 
+import modelinho.TabelaVendaLojaSemestre;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import modelinho.Produtos;
+import modelinho.Tabela1porData;
+import modelinho.TabelaConsulta1Bimestre;
 import modelinho.TabelaConsulta2;
 import modelinho.TabelaConsulta3;
+import modelinho.TabelaConsulta4;
 
 /**
  *
@@ -33,9 +41,12 @@ public class ConsultasDao {
             while (rs.next()) {
 
                 quantidadeVendasSemestreAtual = (int) rs.getInt("quantidade");
-
-                valorVendaSemestralAtual = (double) rs.getDouble("sum");
-
+                valorVendaSemestralAtual = rs.getDouble("sum");
+                
+                DecimalFormat df = new DecimalFormat("0.00");
+                String valorFormatado = df.format(valorVendaSemestralAtual); 
+                valorFormatado = valorFormatado.replaceAll(",", ".");
+                valorVendaSemestralAtual = Double.parseDouble(valorFormatado);
             }
 
         } catch (SQLException ex) {
@@ -117,7 +128,7 @@ public class ConsultasDao {
 
         try (Connection con = Conexao.getConnection();) {
             Statement stmt = con.createStatement();
-            ResultSet rs = stmt.executeQuery("select nome, cpf, ano , sum(valor_vendas), count(valor_vendas) from vendas inner join cliente on vendas.id_cliente=cliente.id inner join tempo on vendas.id_tempo=tempo.id group by nome, ano, cpf");
+            ResultSet rs = stmt.executeQuery("select nome, cpf, ano , sum(valor_vendas), count(valor_vendas) from vendas inner join cliente on vendas.id_cliente=cliente.id inner join tempo on vendas.id_tempo=tempo.id group by nome, ano, cpf order by nome, ano");
 
             while (rs.next()) {
                 TabelaConsulta3 t = new TabelaConsulta3();
@@ -169,5 +180,140 @@ public class ConsultasDao {
         return lista;
 
     }
+    
+    
+    //Consulta de numero 4
+        public static ArrayList<TabelaConsulta4> GerarTabela4(String loja) throws Exception {
+        
+        ArrayList<TabelaConsulta4> lista = new ArrayList<>();
+        try (Connection con = Conexao.getConnection();) {
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery("select  codigo , descricao, count(valor_vendas) as quantidade , sum(valor_vendas) from vendas inner join loja on vendas.id_loja=loja.id inner join produto on vendas.id_produto=produto.id where nome='"+ loja +"' group by codigo, descricao,nome order by descricao");
 
+            while (rs.next()) {
+                TabelaConsulta4 t = new TabelaConsulta4();
+                
+                t.setCodigoProduto(rs.getInt("codigo"));
+                t.setDescricaoProduto(rs.getString("descricao"));
+                t.setQuantidadeVendas(rs.getInt("quantidade"));
+                t.setValorVendas(rs.getDouble("sum"));
+                lista.add(t);
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ConsultasDao.class.getName()).log(Level.SEVERE, null, ex);
+            throw new erros("Erro ao incluir:\n" + ex.getMessage());
+        }
+        
+        return lista;
+    
+    }
+        
+        //Consulta numero 1 -opção Bimestre
+        public static ArrayList<TabelaConsulta1Bimestre> GerarTabela1Bimestre(int ano, String periodo) throws Exception{
+            ArrayList<TabelaConsulta1Bimestre> lista = new ArrayList<>();
+            
+            
+            try (Connection con = Conexao.getConnection();) {
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery("select codigo , descricao, "+ periodo +", ano, sum(qtde_produto) as quantidade, sum(valor_vendas)as total from vendas inner join produto on  vendas.id_produto=produto.id inner join tempo on vendas.id_tempo=tempo.id where ano ="+ ano +" group by codigo,descricao, "+ periodo +",ano order by codigo, "+ periodo);
+
+            while (rs.next()) {
+                TabelaConsulta1Bimestre t = new TabelaConsulta1Bimestre();
+                
+                String periodoo = rs.getString(periodo)+"º " + periodo;
+                t.setCodigo(rs.getInt("codigo"));
+                t.setDescricao(rs.getString("descricao"));
+                t.setQuantidade(rs.getInt("quantidade"));
+                t.setValorTotal(rs.getDouble("total"));
+                t.setPeriodo(periodoo);
+                t.setAno(rs.getInt("ano"));
+                lista.add(t);
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ConsultasDao.class.getName()).log(Level.SEVERE, null, ex);
+            throw new erros("Erro ao incluir:\n" + ex.getMessage());
+        }
+        
+        return lista;
+        }
+        
+                //Consulta numero 1 -opção Bimestre
+        public static ArrayList<Tabela1porData> GerarTabela1Datas(int opcaodata, String campoData) throws Exception{
+            ArrayList<Tabela1porData> lista = new ArrayList<>();
+            String[] vetdata = campoData.split("/");
+            String campos = "";
+            String wheree = "";
+            
+            if (opcaodata == 1) {
+                campos = "dia ,mes ,ano";
+                wheree = "where dia = " + vetdata[0] +" and mes ="+ vetdata[1] + "and ano="+ vetdata[2]; 
+            } 
+            if (opcaodata == 2) {
+                campos = "mes ,ano";
+                wheree = "where mes = " + vetdata[0] +" and ano ="+ vetdata[1]; 
+            }
+            if (opcaodata == 3) {
+                campos = "ano";
+                wheree = "where ano = " + vetdata[0]; 
+            }
+
+
+            
+            try (Connection con = Conexao.getConnection();) {
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery("select codigo , descricao, "+ campos+", sum(qtde_produto) as quantidade, sum(valor_vendas)as total from vendas inner join produto on  vendas.id_produto=produto.id inner join tempo on vendas.id_tempo=tempo.id "+ wheree +" group by codigo,descricao, "+ campos +" order by codigo, "+ campos);
+
+            while (rs.next()) {
+                Tabela1porData t = new Tabela1porData();
+                
+                t.setCodigo(rs.getInt("codigo"));
+                t.setDescricao(rs.getString("descricao"));
+                t.setQuantidade(rs.getInt("quantidade"));
+                t.setValorTotal(rs.getDouble("total"));
+
+                lista.add(t);
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ConsultasDao.class.getName()).log(Level.SEVERE, null, ex);
+            throw new erros("Erro ao incluir:\n" + ex.getMessage());
+        }
+        
+        return lista;
+        }
+        
+        //Consultar Produtos para gerar o Json do Geraldo
+        public static List<Produtos> listaDeProdutos() throws Exception{
+             List<Produtos> lista = new LinkedList<>();
+            
+            
+            try (Connection con = Conexao.getConnection();) {
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery("select * from produto");
+
+            while (rs.next()) {
+                Produtos p = new Produtos();
+                p.setCodigo(rs.getInt("codigo"));
+                p.setDescricaoProduto(rs.getString("descricao"));
+                p.setCategoriaProduto(rs.getString("categoria"));
+               
+                lista.add(p);
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ConsultasDao.class.getName()).log(Level.SEVERE, null, ex);
+            throw new erros("Erro ao incluir:\n" + ex.getMessage());
+        }
+        
+        return lista;
+            
+            
+        }
+        
+        
+        
+        
+        
 }
